@@ -125,7 +125,7 @@ Ray.prototype.intersectWorld = function (world, options) {
     tmpArray.length = 0;
     world.broadphase.aabbQuery(world, tmpAABB, tmpArray);
     this.intersectBodies(tmpArray);
-
+    tmpArray.length = 0;
     return this.hasHit;
 };
 

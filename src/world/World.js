@@ -234,13 +234,19 @@ function World(options){
     this.idToBodyMap = {};
 
     this.broadphase.setWorld(this);
+    
+    this._step_p1 = []; // Reusable arrays for collision pairs
+    this._step_p2 = [];
+    this._step_preStepEvent = {type:"preStep"};
+    this._tmpRay = new Ray();
+
+
 }
 World.prototype = new EventTarget();
 
 // Temp stuff
 var tmpAABB1 = new AABB();
 var tmpArray1 = [];
-var tmpRay = new Ray();
 
 /**
  * Get the contact material between materials m1 and m2
@@ -366,7 +372,7 @@ World.prototype.raycastAll = function(from, to, options, callback){
     options.from = from;
     options.to = to;
     options.callback = callback;
-    return tmpRay.intersectWorld(this, options);
+    return this._tmpRay.intersectWorld(this, options);
 };
 
 /**
@@ -387,7 +393,7 @@ World.prototype.raycastAny = function(from, to, options, result){
     options.from = from;
     options.to = to;
     options.result = result;
-    return tmpRay.intersectWorld(this, options);
+    return this._tmpRay.intersectWorld(this, options);
 };
 
 /**
@@ -408,7 +414,7 @@ World.prototype.raycastClosest = function(from, to, options, result){
     options.from = from;
     options.to = to;
     options.result = result;
-    return tmpRay.intersectWorld(this, options);
+    return this._tmpRay.intersectWorld(this, options);
 };
 
 /**
@@ -561,12 +567,9 @@ var
      * Dispatched before the world steps forward in time.
      * @event preStep
      */
-    World_step_preStepEvent = {type:"preStep"},
     World_step_collideEvent = {type:Body.COLLIDE_EVENT_NAME, body:null, contact:null },
     World_step_oldContacts = [], // Pools for unused objects
     World_step_frictionEquationPool = [],
-    World_step_p1 = [], // Reusable arrays for collision pairs
-    World_step_p2 = [],
     World_step_gvec = new Vec3(), // Temporary vectors and quats
     World_step_vi = new Vec3(),
     World_step_vj = new Vec3(),
@@ -586,8 +589,8 @@ World.prototype.internalStep = function(dt){
     var world = this,
         that = this,
         contacts = this.contacts,
-        p1 = World_step_p1,
-        p2 = World_step_p2,
+        p1 = this._step_p1,
+        p2 = this._step_p2,
         N = this.numObjects(),
         bodies = this.bodies,
         solver = this.solver,
@@ -869,7 +872,7 @@ World.prototype.internalStep = function(dt){
         }
     }
 
-    this.dispatchEvent(World_step_preStepEvent);
+    this.dispatchEvent(this._step_preStepEvent);
 
     // Invoke pre-step callbacks
     for(i=0; i!==N; i++){
